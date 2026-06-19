@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HarmonicShift - Interactive Chord Transposer & Theory Analyzer</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"Space Grotesk"', 'monospace'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    /* Premium Glassmorphism & Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e293b;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #475569;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #64748b;
+    }
+    .gradient-bg {
+      background: radial-gradient(circle at top left, #1e1b4b, #0f172a 60%, #020617);
+    }
+    .neon-border {
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.15);
+    }
+    .note-badge {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .note-badge:hover {
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body class="gradient-bg text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <!-- Logo Icon -->
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+          </svg>
+        </div>
+        <div>
+          <span class="font-mono text-xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">HarmonicShift</span>
+          <span class="hidden sm:inline-block ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-800 text-slate-400 border border-slate-700">v2.4</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-4 text-sm text-slate-400">
+        <span class="hidden md:inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Web Audio Synth Active</span>
+        <button id="helpBtn" class="hover:text-white transition-colors p-2 hover:bg-slate-800/50 rounded-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Help Modal (Custom replacement for alerts/confirms) -->
+  <div id="helpModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 max-w-lg w-full rounded-2xl p-6 shadow-2xl space-y-4">
+      <h3 class="text-xl font-bold text-white flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+        </svg>
+        HarmonicShift Quick Guide
+      </h3>
+      <div class="text-sm text-slate-300 space-y-3 font-normal leading-relaxed">
+        <p>1. <strong>Input:</strong> Type or paste standard chord names (like <span class="font-mono text-indigo-300">C Am F G</span> or <span class="font-mono text-indigo-300">Dm7 G7 Cmaj7</span>) into the text box. Separate them with spaces, commas, or line breaks.</p>
+        <p>2. <strong>Transpose:</strong> Click the <span class="font-mono text-indigo-400 px-1 py-0.5 rounded bg-slate-800 font-bold text-sm">-</span> and <span class="font-mono text-indigo-400 px-1 py-0.5 rounded bg-slate-800 font-bold text-sm">+</span> buttons to instantly shift notes up or down by semitones.</p>
+        <p>3. <strong>Sound Engine:</strong> Tap any individual chord badge to play it out loud. Use the <strong>Sequencer Bar</strong> at the bottom of the input panel to play the entire progression as a loop.</p>
+        <p>4. <strong>Theory Deep-Dive:</strong> The right dashboard breaks down every chord, displays all unique notes (sorted dynamically starting from the root of your first chord), and checks standard Western modes and Hindustani classical Thaats matching your progression.</p>
+      </div>
+      <div class="pt-4 flex justify-end">
+        <button id="closeHelpBtn" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-white font-medium shadow-lg shadow-indigo-600/30 transition-all">Got it, let's play!</button>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- Custom Toast Notification Box -->
+    <div id="toast" class="fixed top-20 right-4 z-50 transform translate-x-72 opacity-0 transition-all duration-300 bg-red-950 border border-red-800 text-red-200 px-4 py-3 rounded-xl shadow-xl flex items-center gap-3">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+      </svg>
+      <span id="toastMessage" class="text-sm font-medium"></span>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TOP ROW: PRIMARY OBJECTIVE WORKSPACE       -->
+    <!-- ========================================== -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+      
+      <!-- 1. Chord Input Sandbox (col-span-5) -->
+      <div class="lg:col-span-5 bg-slate-900/80 border border-slate-850 rounded-2xl p-5 shadow-xl relative overflow-hidden backdrop-blur-md flex flex-col justify-between">
+        <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-indigo-500 to-purple-500"></div>
+        
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-md font-bold text-slate-100 flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Chord Input Sandbox
+            </h2>
+          </div>
+
+          <!-- Textarea Input -->
+          <div class="relative">
+            <textarea id="chordInput" rows="3" class="w-full bg-slate-950 text-indigo-100 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl p-3.5 font-mono text-base tracking-wide placeholder-slate-600 transition-all resize-none" placeholder="Paste chords separated by spaces (e.g. C Am F G)"></textarea>
+            <div class="absolute bottom-2.5 right-3 flex items-center gap-1.5 text-[11px] text-slate-500">
+              <span id="charCount" class="font-bold text-indigo-400">0</span> Chords detected
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3 space-y-3">
+          <!-- Preset Buttons -->
+          <div class="flex flex-wrap gap-1.5">
+            <button onclick="loadPreset('C Am F G')" class="text-xs bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 px-2 py-1 rounded-lg transition-colors">Pop 4-Chord</button>
+            <button onclick="loadPreset('Dm7 G7 Cmaj7 Am7')" class="text-xs bg-slate-800 hover:bg-slate-750 border border-slate-700 text-slate-300 px-2 py-1 rounded-lg transition-colors">Jazz 2-5-1-6</button>
+            <button onclick="loadPreset('Bm11 Gmaj7 D/F# Aadd4 Em9 Gmaj7 Asus4 Bm11')" class="text-xs bg-slate-850 hover:bg-slate-750 border border-indigo-500/50 text-indigo-300 px-2 py-1 rounded-lg transition-colors font-semibold">Complex Indie Loop</button>
+          </div>
+          <!-- Parser Info -->
+          <div class="text-[11px] text-indigo-400/80 leading-tight">
+            💡 Paste slash chords (<span class="bg-slate-800 px-1 rounded font-bold font-mono">D/F#</span>) or extensions (<span class="bg-slate-800 px-1 rounded font-mono">Bm11</span>, <span class="bg-slate-800 px-1 rounded font-mono">Em9</span>). Spaces or commas parse automatically.
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Transposition Control Console (col-span-4) -->
+      <div class="lg:col-span-4 bg-slate-900/80 border border-slate-850 rounded-2xl p-5 shadow-xl relative overflow-hidden backdrop-blur-md flex flex-col justify-between">
+        <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-purple-500 to-pink-500"></div>
+
+        <div>
+          <h2 class="text-md font-bold text-slate-100 flex items-center gap-2 mb-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+            Transposition Engine
+          </h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+            <!-- Semitone Dial -->
+            <div class="flex flex-col items-center justify-center p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+              <div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Shift</div>
+              <div class="flex items-center gap-3">
+                <button id="decrementBtn" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-mono text-xl font-bold flex items-center justify-center border border-slate-700 transition-all select-none">-</button>
+                <div class="text-center min-w-[50px]">
+                  <span id="semitoneDisplay" class="font-mono text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">0</span>
+                </div>
+                <button id="incrementBtn" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-mono text-xl font-bold flex items-center justify-center border border-slate-700 transition-all select-none">+</button>
+              </div>
+              <button onclick="resetTransposition()" class="mt-2 text-[10px] text-indigo-400 hover:text-indigo-300 font-medium hover:underline transition-all">Reset (Original)</button>
+            </div>
+
+            <!-- Accidental Style Selector -->
+            <div class="space-y-3">
+              <div>
+                <label class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Accidentals</label>
+                <div class="grid grid-cols-3 gap-1 p-0.5 bg-slate-950 rounded-lg border border-slate-850">
+                  <button id="accAuto" onclick="setAccidentalMode('auto')" class="py-1 text-[11px] font-medium rounded-md bg-indigo-600 text-white transition-all">Auto</button>
+                  <button id="accSharp" onclick="setAccidentalMode('sharp')" class="py-1 text-[11px] font-medium rounded-md text-slate-400 hover:text-white transition-all">#</button>
+                  <button id="accFlat" onclick="setAccidentalMode('flat')" class="py-1 text-[11px] font-medium rounded-md text-slate-400 hover:text-white transition-all">b</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Interval Jumps -->
+        <div class="mt-3 pt-3 border-t border-slate-850/60">
+          <span class="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Quick Interval Jumps</span>
+          <div class="flex flex-wrap gap-1">
+            <button onclick="shiftSemitones(-5)" class="px-2 py-0.5 text-[10px] bg-slate-850 hover:bg-slate-800 border border-slate-800 rounded text-slate-300">-5 semitones</button>
+            <button onclick="shiftSemitones(5)" class="px-2 py-0.5 text-[10px] bg-slate-850 hover:bg-slate-800 border border-slate-800 rounded text-slate-300">+5 semitones</button>
+            <button onclick="shiftSemitones(7)" class="px-2 py-0.5 text-[10px] bg-slate-850 hover:bg-slate-800 border border-slate-800 rounded text-slate-300">+7 (Perfect 5th)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Transposed Progression Deck & Playback (col-span-3) -->
+      <div class="lg:col-span-3 bg-slate-900/80 border border-slate-850 rounded-2xl p-5 shadow-xl relative overflow-hidden backdrop-blur-md flex flex-col justify-between">
+        <div class="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-pink-500 to-rose-500"></div>
+
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-md font-bold text-slate-100 flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Transposed Chords
+            </h2>
+            <div id="playbackIndicator" class="text-[9px] text-rose-400 font-bold px-1.5 py-0.5 rounded-full bg-rose-550/10 border border-rose-500/20 hidden flex items-center gap-1">
+              <span class="w-1 h-1 bg-rose-400 rounded-full animate-ping"></span> Playing
+            </div>
+          </div>
+
+          <!-- Sequencer Progression Horizontal Loop List -->
+          <div class="overflow-y-auto max-h-[110px] pr-1">
+            <div id="progressionCards" class="grid grid-cols-2 gap-1.5">
+              <!-- Will be dynamically populated with large, beautiful transposed chords -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Play/Pause & Tempo Controls -->
+        <div class="mt-3 pt-3 border-t border-slate-850/60 space-y-2">
+          <div class="flex items-center justify-between gap-2">
+            <button id="playBtn" onclick="toggleSequencer()" class="flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 active:scale-95 text-slate-950 font-bold rounded-lg text-xs transition-all shadow-md">
+              <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+              </svg>
+              <span id="playText">Play Loop</span>
+            </button>
+            <button onclick="stopSequencer()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-all text-xs" title="Stop Loop">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+          <!-- Tempo -->
+          <div class="flex items-center justify-between gap-2">
+            <input type="range" id="bpmSlider" min="40" max="180" value="85" class="w-full accent-indigo-500 h-1 bg-slate-800 rounded-lg cursor-pointer">
+            <span id="bpmDisplay" class="text-[10px] font-bold font-mono text-slate-400 min-w-[45px] text-right">85 BPM</span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ========================================== -->
+    <!-- BOTTOM WORKSPACE: SECONDARY THEORY STACK   -->
+    <!-- ========================================== -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- LEFT BOTTOM COLUMN (Comparative table & Note Harvester) -->
+      <section class="lg:col-span-7 space-y-6">
+        
+        <!-- Comparative Chord Anatomy Grid -->
+        <div class="bg-slate-900/80 border border-slate-850 rounded-2xl p-6 shadow-xl backdrop-blur-md overflow-x-auto">
+          <h2 class="text-md font-bold text-slate-100 flex items-center gap-2 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            Comparative Chord Anatomy Grid
+          </h2>
+
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-slate-850 text-xs text-slate-400 font-semibold uppercase tracking-wider">
+                <th class="py-2.5 px-3">Original Chord</th>
+                <th class="py-2.5 px-3">Notes Breakdown</th>
+                <th class="py-2.5 px-3">Transposed</th>
+                <th class="py-2.5 px-3">New Notes Breakdown</th>
+              </tr>
+            </thead>
+            <tbody id="anatomyTableBody" class="divide-y divide-slate-850/30 text-sm">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+          <div id="emptyAnatomyState" class="hidden py-8 text-center text-sm text-slate-500">
+            Awaiting input chords to dissect intervals.
+          </div>
+        </div>
+
+        <!-- Unique Note Harvester Panel -->
+        <div class="bg-slate-900/80 border border-slate-850 rounded-2xl p-6 shadow-xl backdrop-blur-md relative">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 border-b border-slate-850 pb-4">
+            <div>
+              <h2 class="text-md font-bold text-slate-100 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Unique Note Harvester
+              </h2>
+              <p id="uniqueNoteSub" class="text-xs text-slate-400">Total note footprint extracted from input sequence</p>
+            </div>
+            
+            <!-- Comparison Toggle -->
+            <div class="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-850">
+              <button id="viewNoteModeOrig" onclick="toggleUniqueNoteView('original')" class="px-2.5 py-1 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition-all">Original</button>
+              <button id="viewNoteModeTrans" onclick="toggleUniqueNoteView('transposed')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-600/35 text-white transition-all">Transposed</button>
+            </div>
+          </div>
+
+          <!-- Color Music Note Spectrum Output -->
+          <div class="space-y-4">
+            <div id="uniqueNoteContainer" class="flex flex-wrap gap-2 min-h-[40px] items-center">
+              <!-- Populated dynamically with beautiful colored note badges -->
+            </div>
+            <div id="emptyNoteFootprint" class="hidden py-4 text-center text-sm text-slate-500">
+              No valid chords supplied. Start typing left to map spectrum.
+            </div>
+          </div>
+
+          <!-- Occurrence Frequency Bar Chart -->
+          <div id="frequencyChartSection" class="mt-6 pt-6 border-t border-slate-800/80 space-y-4 hidden">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h25a1 1 0 000-2H5V5a1 1 0 00-2-2z" clip-rule="evenodd" />
+                  <path d="M5 7a1 1 0 011-1h1.5a1 1 0 011 1v4a1 1 0 01-1 1H6a1 1 0 01-1-1V7zm5-2a1 1 0 011-1h1.5a1 1 0 011 1v6a1 1 0 01-1 1H11a1 1 0 01-1-1V5zm5 4a1 1 0 011-1h1.5a1 1 0 011 1v2a1 1 0 01-1 1h-1.5a1 1 0 01-1-1V9z" />
+                </svg>
+                Note Occurrence Frequency
+              </h3>
+              <div class="text-[10px] text-slate-400 flex items-center gap-3">
+                <span class="flex items-center gap-1.5">
+                  <span class="inline-block w-2 h-2 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 animate-pulse"></span>
+                  Tonic
+                </span>
+                <span class="flex items-center gap-1.5">
+                  <span class="inline-block w-2 h-2 rounded-full bg-indigo-500"></span>
+                  Others
+                </span>
+              </div>
+            </div>
+            
+            <div id="frequencyChartContainer" class="space-y-2.5">
+              <!-- Filled dynamically by JavaScript -->
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- RIGHT BOTTOM COLUMN (Theory maps & Piano monitor) -->
+      <section class="lg:col-span-5 space-y-6">
+
+        <!-- Modality & Thaat Synthesis Map -->
+        <div class="grid grid-cols-1 gap-6">
+          <!-- Western Modal Matrix -->
+          <div class="bg-slate-900/80 border border-slate-850 rounded-2xl p-5 shadow-xl backdrop-blur-md space-y-4">
+            <h3 class="text-xs font-bold text-indigo-300 uppercase tracking-wider border-b border-slate-850 pb-2 flex items-center justify-between">
+              <span>Western Modal Match</span>
+              <span class="text-[10px] text-slate-500 font-normal normal-case">Dynamic Modal Matches</span>
+            </h3>
+            <div id="westernScalesList" class="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+              <!-- Match list populated dynamically -->
+            </div>
+          </div>
+
+          <!-- Eastern classical (Thaat) Map -->
+          <div class="bg-slate-900/80 border border-slate-850 rounded-2xl p-5 shadow-xl backdrop-blur-md space-y-4">
+            <h3 class="text-xs font-bold text-pink-300 uppercase tracking-wider border-b border-slate-850 pb-2 flex items-center justify-between">
+              <span>Hindustani Thaat Match</span>
+              <span class="text-[10px] text-slate-500 font-normal normal-case">Classic Indian Thaat scale lookup</span>
+            </h3>
+            <div id="easternThaatsList" class="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+              <!-- Thaat matches populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Dynamic Piano Keyboard Visualizer -->
+        <div class="bg-slate-900/80 border border-slate-850 rounded-2xl p-5 shadow-xl backdrop-blur-md space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z" />
+              </svg>
+              Live Piano Monitor
+            </h2>
+            <div class="text-[10px] text-slate-500">
+              Yellow = Played Note | Indigo = Footprint
+            </div>
+          </div>
+
+          <!-- Responsive Piano Wrap -->
+          <div class="relative select-none w-full overflow-x-auto pb-1">
+            <div id="pianoKeyboard" class="flex min-w-[450px] h-28 border border-slate-950 rounded-xl overflow-hidden relative bg-slate-950">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- Web Audio Synthesizer Logic -->
+  <script>
+    // Context initialization
+    let audioCtx = null;
+    let mainGainNode = null;
+    const activeOscillators = [];
+
+    function initAudio() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      mainGainNode = audioCtx.createGain();
+      mainGainNode.gain.setValueAtTime(0.3, audioCtx.currentTime); // Master gain control
+      mainGainNode.connect(audioCtx.destination);
+    }
+
+    // Polyphonic plucking simulating custom electric piano
+    function playChordNotes(noteNames) {
+      try {
+        initAudio();
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        // Stop any currently sustained chord notes to avoid bleeding clutter
+        stopAllOscillators();
+
+        const frequencies = noteNames.map(noteToFrequency);
+        const now = audioCtx.currentTime;
+
+        frequencies.forEach((freq, index) => {
+          if (!freq) return;
+
+          // Fundamental oscillator (triangle wave)
+          const osc1 = audioCtx.createOscillator();
+          osc1.type = 'triangle';
+          osc1.frequency.setValueAtTime(freq, now);
+
+          // Sparkle subharmonic chime (sine wave)
+          const osc2 = audioCtx.createOscillator();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(freq * 2, now); // Octave overtone
+
+          // Leveling envelope
+          const gainNode = audioCtx.createGain();
+          gainNode.gain.setValueAtTime(0, now);
+          // Fast attack
+          gainNode.gain.linearRampToValueAtTime(0.18, now + 0.04);
+          // Elegant decaying tail (sustain-decay)
+          gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
+
+          osc1.connect(gainNode);
+          osc2.connect(gainNode);
+          gainNode.connect(mainGainNode);
+
+          osc1.start(now);
+          osc2.start(now);
+
+          osc1.stop(now + 2.0);
+          osc2.stop(now + 2.0);
+
+          activeOscillators.push(osc1, osc2, gainNode);
+          
+          // Flash keyboard visually when notes sound
+          highlightPianoKeyTemporarily(noteNames[index]);
+        });
+      } catch (err) {
+        console.error("Audio trigger failed: ", err);
+      }
+    }
+
+    function stopAllOscillators() {
+      activeOscillators.forEach(node => {
+        try { node.stop(); } catch(e) {}
+      });
+      activeOscillators.length = 0;
+    }
+
+    // Convert scientific Pitch Note representation to Frequency
+    function noteToFrequency(note) {
+      // Find fundamental pitches index
+      const baseNotes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      const flatNotes = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+      
+      // Clean up note string
+      let cleaned = note.trim();
+      let pitch = cleaned.replace(/[0-9]/g, '');
+      let octave = parseInt(cleaned.replace(/[^0-9]/g, '')) || 4; // Defaults to middle octave 4
+
+      let pitchIdx = baseNotes.indexOf(pitch);
+      if (pitchIdx === -1) {
+        pitchIdx = flatNotes.indexOf(pitch);
+      }
+      if (pitchIdx === -1) return null;
+
+      // Formula: f = 440 * 2^((d - 69) / 12) where A4 is index 69
+      const d = (octave + 1) * 12 + pitchIdx;
+      return 440 * Math.pow(2, (d - 69) / 12);
+    }
+  </script>
+
+  <!-- Core Music Theory Sandbox Engine -->
+  <script>
+    // Pitch collections
+    const PITCHES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const FLAT_PITCHES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+    // Map chord variations with semitone intervals
+    const CHORD_INTERVALS = {
+      // Major Triads
+      '': [0, 4, 7],
+      'maj': [0, 4, 7],
+      'M': [0, 4, 7],
+      'major': [0, 4, 7],
+      'maj3': [0, 4, 7],
+
+      // Minor Triads
+      'm': [0, 3, 7],
+      'min': [0, 3, 7],
+      'minor': [0, 3, 7],
+      '-': [0, 3, 7],
+
+      // Diminished Triads
+      'dim': [0, 3, 6],
+      'o': [0, 3, 6],
+      '°': [0, 3, 6],
+
+      // Augmented Triads
+      'aug': [0, 4, 8],
+      '+': [0, 4, 8],
+      '+5': [0, 4, 8],
+
+      // Suspended Chords
+      'sus': [0, 5, 7],
+      'sus4': [0, 5, 7],
+      'sus2': [0, 2, 7],
+      '7sus4': [0, 5, 7, 10],
+      '7sus': [0, 5, 7, 10],
+
+      // Sixths
+      '6': [0, 4, 7, 9],
+      'm6': [0, 3, 7, 9],
+      'min6': [0, 3, 7, 9],
+
+      // Sevenths
+      '7': [0, 4, 7, 10],
+      'dom7': [0, 4, 7, 10],
+      'maj7': [0, 4, 7, 11],
+      'M7': [0, 4, 7, 11],
+      'Δ7': [0, 4, 7, 11],
+      'Δ': [0, 4, 7, 11],
+      'm7': [0, 3, 7, 10],
+      'min7': [0, 3, 7, 10],
+      '-7': [0, 3, 7, 10],
+      'mM7': [0, 3, 7, 11],
+      'm(maj7)': [0, 3, 7, 11],
+      'minmaj7': [0, 3, 7, 11],
+      'dim7': [0, 3, 6, 9],
+      'o7': [0, 3, 6, 9],
+      '°7': [0, 3, 6, 9],
+      'm7b5': [0, 3, 6, 10],
+      'halfdim': [0, 3, 6, 10],
+      'ø7': [0, 3, 6, 10],
+      'ø': [0, 3, 6, 10],
+      'augmaj7': [0, 4, 8, 11],
+      '+maj7': [0, 4, 8, 11],
+      'maj7#5': [0, 4, 8, 11],
+      '7#5': [0, 4, 8, 10],
+      '7+5': [0, 4, 8, 10],
+      'aug7': [0, 4, 8, 10],
+
+      // Ninths
+      '9': [0, 4, 7, 10, 14],
+      'maj9': [0, 4, 7, 11, 14],
+      'M9': [0, 4, 7, 11, 14],
+      'm9': [0, 3, 7, 10, 14],
+      'min9': [0, 3, 7, 10, 14],
+      '-9': [0, 3, 7, 10, 14],
+      'add9': [0, 4, 7, 14],
+      'add2': [0, 4, 7, 14],
+      'madd9': [0, 3, 7, 14],
+
+      // Elevenths
+      '11': [0, 4, 7, 10, 14, 17],
+      'maj11': [0, 4, 7, 11, 14, 17],
+      'm11': [0, 3, 7, 10, 14, 17],
+      'min11': [0, 3, 7, 10, 14, 17],
+      '-11': [0, 3, 7, 10, 14, 17],
+      'add11': [0, 4, 7, 17],
+      'add4': [0, 4, 7, 17],
+      'madd11': [0, 3, 7, 17],
+      'madd4': [0, 3, 7, 17],
+
+      // Thirteenths
+      '13': [0, 4, 7, 10, 14, 17, 21],
+      'maj13': [0, 4, 7, 11, 14, 17, 21],
+      'm13': [0, 3, 7, 10, 14, 17, 21],
+      'min13': [0, 3, 7, 10, 14, 17, 21],
+
+      // Power Chords
+      '5': [0, 7],
+      'power': [0, 7]
+    };
+
+    // Color Music Wheel Palette Spectrum
+    const NOTE_COLORS = {
+      'C': 'from-red-500 to-red-600 ring-red-500/20 text-red-100',
+      'C#': 'from-orange-600 to-red-600 ring-orange-500/20 text-orange-100',
+      'Db': 'from-orange-600 to-red-600 ring-orange-500/20 text-orange-100',
+      'D': 'from-orange-400 to-orange-500 ring-orange-400/20 text-orange-950',
+      'D#': 'from-yellow-500 to-amber-500 ring-yellow-500/20 text-yellow-950',
+      'Eb': 'from-yellow-500 to-amber-500 ring-yellow-500/20 text-yellow-950',
+      'E': 'from-yellow-300 to-yellow-400 ring-yellow-300/20 text-yellow-950',
+      'F': 'from-emerald-400 to-green-500 ring-emerald-400/20 text-emerald-950',
+      'F#': 'from-green-500 to-teal-600 ring-green-500/20 text-green-100',
+      'Gb': 'from-green-500 to-teal-600 ring-green-500/20 text-green-100',
+      'G': 'from-teal-400 to-cyan-500 ring-teal-400/20 text-cyan-950',
+      'G#': 'from-blue-500 to-indigo-600 ring-blue-500/20 text-blue-100',
+      'Ab': 'from-blue-500 to-indigo-600 ring-blue-500/20 text-blue-100',
+      'A': 'from-indigo-500 to-violet-600 ring-indigo-500/20 text-indigo-100',
+      'A#': 'from-violet-500 to-purple-600 ring-violet-500/20 text-violet-100',
+      'Bb': 'from-violet-500 to-purple-600 ring-violet-500/20 text-violet-100',
+      'B': 'from-fuchsia-400 to-pink-500 ring-fuchsia-400/20 text-fuchsia-950'
+    };
+
+    // Mode Interval Blueprints
+    const WESTERN_SCALES = [
+      { name: "Major / Ionian", intervals: [0, 2, 4, 5, 7, 9, 11] },
+      { name: "Dorian Mode", intervals: [0, 2, 3, 5, 7, 9, 10] },
+      { name: "Phrygian Mode", intervals: [0, 1, 3, 5, 7, 8, 10] },
+      { name: "Lydian Mode", intervals: [0, 2, 4, 6, 7, 9, 11] },
+      { name: "Mixolydian Mode", intervals: [0, 2, 4, 5, 7, 9, 10] },
+      { name: "Natural Minor / Aeolian", intervals: [0, 2, 3, 5, 7, 8, 10] },
+      { name: "Locrian Mode", intervals: [0, 1, 3, 5, 6, 8, 10] },
+      { name: "Harmonic Minor", intervals: [0, 2, 3, 5, 7, 8, 11] },
+      { name: "Melodic Minor", intervals: [0, 2, 3, 5, 7, 9, 11] },
+    ];
+
+    const HINDUSTANI_THAATS = [
+      { name: "Bilawal Thaat (Major equivalent)", intervals: [0, 2, 4, 5, 7, 9, 11], swars: "S R G m P D N" },
+      { name: "Kalyan Thaat", intervals: [0, 2, 4, 6, 7, 9, 11], swars: "S R G M P D N" },
+      { name: "Khamaj Thaat", intervals: [0, 2, 4, 5, 7, 9, 10], swars: "S R G m P D n" },
+      { name: "Kafi Thaat", intervals: [0, 2, 3, 5, 7, 9, 10], swars: "S R g m P D n" },
+      { name: "Asavari Thaat", intervals: [0, 2, 3, 5, 7, 8, 10], swars: "S R g m P d n" },
+      { name: "Bhairav Thaat", intervals: [0, 1, 4, 5, 7, 8, 11], swars: "S r G m P d N" },
+      { name: "Bhairavi Thaat", intervals: [0, 1, 3, 5, 7, 8, 10], swars: "S r g m P d n" },
+      { name: "Todi Thaat", intervals: [0, 1, 3, 6, 7, 8, 11], swars: "S r g M P d N" },
+      { name: "Purvi Thaat", intervals: [0, 1, 4, 6, 7, 8, 11], swars: "S r G M P d N" },
+      { name: "Marva Thaat", intervals: [0, 1, 4, 6, 7, 9, 11], swars: "S r G M P D N" },
+    ];
+
+    // Hindustani classical notation index matching
+    const SWAR_NAMES = ["S", "r", "R", "g", "G", "m", "M", "P", "d", "D", "n", "N"];
+
+    // App State Configuration
+    let state = {
+      semitones: 0,
+      accidentalMode: 'auto', // 'auto', 'sharp', 'flat'
+      chords: [], // Parsed original inputs
+      uniqueNoteView: 'transposed', // 'original' or 'transposed'
+      loopPlaying: false,
+      loopIntervalId: null,
+      currentLoopStep: -1,
+      bpm: 85
+    };
+
+    // Parse note indexing helper
+    function getPitchIndex(note) {
+      let idx = PITCHES.indexOf(note);
+      if (idx !== -1) return idx;
+      return FLAT_PITCHES.indexOf(note);
+    }
+
+    // Smart accidental picker based on transposition key
+    function useFlatsForContext(transposedRoot) {
+      if (state.accidentalMode === 'flat') return true;
+      if (state.accidentalMode === 'sharp') return false;
+      
+      // Auto logic based on standard Circle of Fifths friendly signatures
+      const flatKeys = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'd', 'g', 'c', 'f', 'bb', 'eb'];
+      return flatKeys.includes(transposedRoot);
+    }
+
+    // Transpose note by interval delta
+    function shiftNote(note, delta, forceFlats = null) {
+      let idx = getPitchIndex(note);
+      if (idx === -1) return note;
+      let newIdx = (idx + delta) % 12;
+      if (newIdx < 0) newIdx += 12;
+
+      const flag = (forceFlats !== null) ? forceFlats : state.accidentalMode === 'flat';
+      return flag ? FLAT_PITCHES[newIdx] : PITCHES[newIdx];
+    }
+
+    // Dissect Chord name to pieces: [Root, Suffix]
+    function parseChordStr(chordStr) {
+      chordStr = chordStr.trim();
+      if (!chordStr) return null;
+      
+      // Support custom slash chords like D/F# or Bm11/A
+      const parts = chordStr.split('/');
+      const mainChordStr = parts[0].trim();
+      const bassStr = parts[1] ? parts[1].trim() : null;
+
+      // Regex detects base letters A-G with flat/sharp mod, trailing components
+      const match = mainChordStr.match(/^([A-G][#b]?)(.*)$/);
+      if (!match) return null;
+
+      const root = match[1];
+      const rawSuffix = match[2] || '';
+
+      // Verify suffix exists inside our mapping catalog
+      const cleanSuffix = CHORD_INTERVALS.hasOwnProperty(rawSuffix) ? rawSuffix : '';
+      return { 
+        root, 
+        suffix: cleanSuffix, 
+        rawSuffix: rawSuffix, 
+        bass: bassStr,
+        original: chordStr 
+      };
+    }
+
+    // Compute intervals relative to root
+    function getChordNotes(root, suffix, forceFlats = null, bass = null) {
+      const startIdx = getPitchIndex(root);
+      if (startIdx === -1) return [];
+
+      const intervals = CHORD_INTERVALS[suffix] || CHORD_INTERVALS[''];
+      const notes = intervals.map(interval => {
+        const targetIdx = (startIdx + interval) % 12;
+        // octave identification
+        const octaveOffset = Math.floor((startIdx + interval) / 12);
+        const octave = 4 + octaveOffset;
+        const noteName = (forceFlats !== null) ? (forceFlats ? FLAT_PITCHES[targetIdx] : PITCHES[targetIdx]) : (state.accidentalMode === 'flat' ? FLAT_PITCHES[targetIdx] : PITCHES[targetIdx]);
+        return `${noteName}${octave}`;
+      });
+
+      // If a slash chord bass note is specified, add it to the front at a lower octave (Octave 3)
+      if (bass) {
+        const bassIdx = getPitchIndex(bass);
+        if (bassIdx !== -1) {
+          const bassNoteName = (forceFlats !== null) ? (forceFlats ? FLAT_PITCHES[bassIdx] : PITCHES[bassIdx]) : (state.accidentalMode === 'flat' ? FLAT_PITCHES[bassIdx] : PITCHES[bassIdx]);
+          notes.unshift(`${bassNoteName}3`);
+        }
+      }
+
+      return notes;
+    }
+
+    // Generate Transposed Chord Name accurately
+    function buildTransposedChord(chordObj, delta) {
+      const rootFlats = useFlatsForContext(chordObj.root);
+      const newRoot = shiftNote(chordObj.root, delta, rootFlats);
+      let newBass = null;
+      let transposedName = `${newRoot}${chordObj.rawSuffix || chordObj.suffix}`;
+      
+      if (chordObj.bass) {
+        newBass = shiftNote(chordObj.bass, delta, rootFlats);
+        transposedName = `${newRoot}${chordObj.rawSuffix || chordObj.suffix}/${newBass}`;
+      }
+
+      return {
+        chordName: transposedName,
+        root: newRoot,
+        suffix: chordObj.suffix,
+        rawSuffix: chordObj.rawSuffix,
+        bass: newBass
+      };
+    }
+  </script>
+
+  <!-- UI & Interactions Logic -->
+  <script>
+    // Event Hooks Setup
+    document.addEventListener('DOMContentLoaded', () => {
+      // Setup elements
+      const input = document.getElementById('chordInput');
+      const bpmSlider = document.getElementById('bpmSlider');
+      const bpmDisplay = document.getElementById('bpmDisplay');
+
+      // Modal Triggers
+      document.getElementById('helpBtn').addEventListener('click', () => {
+        document.getElementById('helpModal').classList.remove('hidden');
+      });
+      document.getElementById('closeHelpBtn').addEventListener('click', () => {
+        document.getElementById('helpModal').classList.add('hidden');
+      });
+
+      // Chord Input Listener
+      input.addEventListener('input', () => {
+        processInput();
+      });
+
+      // Transposition increment / decrement
+      document.getElementById('decrementBtn').addEventListener('click', () => {
+        shiftSemitones(-1);
+      });
+      document.getElementById('incrementBtn').addEventListener('click', () => {
+        shiftSemitones(1);
+      });
+
+      // Tempo slider
+      bpmSlider.addEventListener('input', (e) => {
+        state.bpm = parseInt(e.target.value);
+        bpmDisplay.textContent = `${state.bpm} BPM`;
+        if (state.loopPlaying) {
+          restartSequencer();
+        }
+      });
+
+      // Prepopulate with your preferred loop
+      loadPreset('Bm11 Gmaj7 D/F# Aadd4 Em9 Gmaj7 Asus4 Bm11');
+      buildPianoKeyboard();
+    });
+
+    // Custom Toast Dispatcher
+    function dispatchToast(msg) {
+      const toast = document.getElementById('toast');
+      const message = document.getElementById('toastMessage');
+      message.textContent = msg;
+      
+      toast.classList.remove('translate-x-72', 'opacity-0');
+      toast.classList.add('translate-x-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-x-0', 'opacity-100');
+        toast.classList.add('translate-x-72', 'opacity-0');
+      }, 4000);
+    }
+
+    function loadPreset(presetStr) {
+      document.getElementById('chordInput').value = presetStr;
+      processInput();
+    }
+
+    function processInput() {
+      const text = document.getElementById('chordInput').value;
+      const rawTokens = text.split(/[\s,\n]+/);
+      
+      const parsed = [];
+      const unrecognized = [];
+
+      rawTokens.forEach(tok => {
+        if (!tok) return;
+        const ch = parseChordStr(tok);
+        if (ch) {
+          parsed.push(ch);
+        } else {
+          unrecognized.push(tok);
+        }
+      });
+
+      state.chords = parsed;
+      document.getElementById('charCount').textContent = parsed.length;
+
+      if (unrecognized.length > 0 && text.trim().endsWith(' ')) {
+        dispatchToast(`Skipping invalid tokens: ${unrecognized.join(', ')}`);
+      }
+
+      evaluateAll();
+    }
+
+    function shiftSemitones(val) {
+      state.semitones += val;
+      if (state.semitones > 24) state.semitones = 24;
+      if (state.semitones < -24) state.semitones = -24;
+
+      updateTranspositionUI();
+      evaluateAll();
+    }
+
+    function resetTransposition() {
+      state.semitones = 0;
+      updateTranspositionUI();
+      evaluateAll();
+    }
+
+    function updateTranspositionUI() {
+      const display = document.getElementById('semitoneDisplay');
+      let valStr = state.semitones.toString();
+      if (state.semitones > 0) valStr = `+${valStr}`;
+      display.textContent = valStr;
+    }
+
+    function setAccidentalMode(mode) {
+      state.accidentalMode = mode;
+      
+      const btns = {
+        'auto': document.getElementById('accAuto'),
+        'sharp': document.getElementById('accSharp'),
+        'flat': document.getElementById('accFlat')
+      };
+
+      Object.keys(btns).forEach(key => {
+        if (key === mode) {
+          btns[key].className = "py-1 text-[11px] font-medium rounded-md bg-indigo-600 text-white transition-all shadow-md";
+        } else {
+          btns[key].className = "py-1 text-[11px] font-medium rounded-md text-slate-400 hover:text-white transition-all";
+        }
+      });
+
+      evaluateAll();
+    }
+
+    function toggleUniqueNoteView(view) {
+      state.uniqueNoteView = view;
+      const origBtn = document.getElementById('viewNoteModeOrig');
+      const transBtn = document.getElementById('viewNoteModeTrans');
+
+      if (view === 'original') {
+        origBtn.className = "px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-600/35 text-white";
+        transBtn.className = "px-2.5 py-1 text-xs font-semibold rounded-lg text-slate-400 hover:text-white";
+      } else {
+        transBtn.className = "px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-600/35 text-white";
+        origBtn.className = "px-2.5 py-1 text-xs font-semibold rounded-lg text-slate-400 hover:text-white";
+      }
+
+      drawUniqueNotes();
+    }
+
+    function evaluateAll() {
+      drawComparativeTable();
+      drawUniqueNotes();
+      evaluateScalesAndThaats();
+      drawSequencerProgression();
+      drawKeyboardFootprint();
+    }
+
+    function drawComparativeTable() {
+      const tbody = document.getElementById('anatomyTableBody');
+      const emptyState = document.getElementById('emptyAnatomyState');
+      tbody.innerHTML = '';
+
+      if (state.chords.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      state.chords.forEach((ch, idx) => {
+        // Source Notes
+        const useFlatsSource = useFlatsForContext(ch.root);
+        const sourceNotes = getChordNotes(ch.root, ch.suffix, useFlatsSource, ch.bass);
+        const sourceNotesClean = sourceNotes.map(n => n.replace(/[0-9]/g, ''));
+
+        // Transposed Notes
+        const transChordObj = buildTransposedChord(ch, state.semitones);
+        const transFlats = useFlatsForContext(transChordObj.root);
+        const transNotes = getChordNotes(transChordObj.root, transChordObj.suffix, transFlats, transChordObj.bass);
+        const transNotesClean = transNotes.map(n => n.replace(/[0-9]/g, ''));
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-800/40 transition-colors group cursor-pointer border-b border-slate-850/30";
+        tr.onclick = () => {
+          playChordNotes(transNotes);
+        };
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-mono font-bold text-slate-300 group-hover:text-white transition-colors flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-700 group-hover:bg-indigo-400"></span>
+            ${ch.original}
+          </td>
+          <td class="py-2.5 px-3">
+            <div class="flex flex-wrap gap-1">
+              ${sourceNotesClean.map(note => `<span class="px-1.5 py-0.5 rounded text-[11px] font-medium bg-slate-950 border border-slate-800 text-slate-400 font-mono">${note}</span>`).join('')}
+            </div>
+          </td>
+          <td class="py-2.5 px-3 font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+            ${transChordObj.chordName}
+          </td>
+          <td class="py-2.5 px-3">
+            <div class="flex flex-wrap gap-1">
+              ${transNotesClean.map(note => `<span class="px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-950/40 border border-indigo-900/30 text-indigo-300 font-mono">${note}</span>`).join('')}
+            </div>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+    }
+
+    function drawUniqueNotes() {
+      const container = document.getElementById('uniqueNoteContainer');
+      const emptyState = document.getElementById('emptyNoteFootprint');
+      const subText = document.getElementById('uniqueNoteSub');
+      const chartSection = document.getElementById('frequencyChartSection');
+      const chartContainer = document.getElementById('frequencyChartContainer');
+      
+      container.innerHTML = '';
+      chartContainer.innerHTML = '';
+
+      if (state.chords.length === 0) {
+        emptyState.classList.remove('hidden');
+        chartSection.classList.add('hidden');
+        if (subText) subText.textContent = "Total note footprint extracted from input sequence";
+        return;
+      }
+      emptyState.classList.add('hidden');
+      chartSection.classList.remove('hidden');
+
+      const uniqueNotesSet = new Set();
+      const noteFrequencies = {};
+      let startIdx = 0; // Default starts at C
+      let baseTonicName = "C";
+
+      if (state.chords.length > 0) {
+        let firstChordRoot = state.chords[0].root;
+        if (state.uniqueNoteView === 'transposed') {
+          const transCh = buildTransposedChord(state.chords[0], state.semitones);
+          firstChordRoot = transCh.root;
+        }
+        baseTonicName = firstChordRoot;
+        startIdx = getPitchIndex(firstChordRoot);
+      }
+
+      if (subText) {
+        subText.textContent = `Sorted relative to the active home key tonic (${baseTonicName}) of your progression.`;
+      }
+
+      state.chords.forEach(ch => {
+        let activeNotes = [];
+        if (state.uniqueNoteView === 'original') {
+          const useFlats = useFlatsForContext(ch.root);
+          activeNotes = getChordNotes(ch.root, ch.suffix, useFlats, ch.bass);
+        } else {
+          const transCh = buildTransposedChord(ch, state.semitones);
+          const useFlats = useFlatsForContext(transCh.root);
+          activeNotes = getChordNotes(transCh.root, transCh.suffix, useFlats, transCh.bass);
+        }
+
+        const chordPitchesHit = new Set();
+        activeNotes.forEach(note => {
+          const name = note.replace(/[0-9]/g, '');
+          chordPitchesHit.add(name);
+        });
+
+        chordPitchesHit.forEach(name => {
+          uniqueNotesSet.add(name);
+          noteFrequencies[name] = (noteFrequencies[name] || 0) + 1;
+        });
+      });
+
+      const maxFrequency = Math.max(...Object.values(noteFrequencies), 1);
+
+      const sortedNotes = Array.from(uniqueNotesSet).sort((a, b) => {
+        const idxA = getPitchIndex(a);
+        const idxB = getPitchIndex(b);
+        const relA = (idxA - startIdx + 12) % 12;
+        const relB = (idxB - startIdx + 12) % 12;
+        return relA - relB;
+      });
+
+      sortedNotes.forEach(noteName => {
+        const colorClasses = NOTE_COLORS[noteName] || 'from-slate-500 to-slate-600 text-slate-100 ring-slate-500/20';
+        
+        const badge = document.createElement('div');
+        badge.className = `note-badge px-3 py-1.5 rounded-xl bg-gradient-to-tr ${colorClasses} font-mono font-bold text-xs shadow-md ring-4 flex items-center justify-between gap-1.5 border border-white/10`;
+        badge.innerHTML = `
+          <span>${noteName}</span>
+          <span class="w-1.5 h-1.5 rounded-full bg-white/60"></span>
+        `;
+        container.appendChild(badge);
+
+        const occurrences = noteFrequencies[noteName] || 0;
+        const widthPercentage = (occurrences / maxFrequency) * 100;
+        const isTonalCenter = (noteName === baseTonicName);
+
+        const barRow = document.createElement('div');
+        barRow.className = "flex items-center gap-3 text-xs select-none";
+
+        const labelCol = document.createElement('div');
+        labelCol.className = `w-6 font-mono font-bold ${isTonalCenter ? 'text-amber-400' : 'text-slate-300'}`;
+        labelCol.textContent = noteName;
+
+        const progressCol = document.createElement('div');
+        progressCol.className = "flex-1 bg-slate-950 h-5 rounded-lg overflow-hidden border border-slate-850/70 relative flex items-center";
+
+        const fillBar = document.createElement('div');
+        let barStyleClasses = isTonalCenter
+          ? "bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 shadow-[0_0_12px_rgba(245,158,11,0.25)]"
+          : "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600/70";
+        
+        fillBar.className = `${barStyleClasses} h-full rounded-r transition-all duration-500`;
+        fillBar.style.width = `${widthPercentage}%`;
+
+        const occurrencesLabel = document.createElement('span');
+        occurrencesLabel.className = "absolute right-3 font-mono text-[9px] text-slate-400 font-semibold";
+        occurrencesLabel.textContent = `${occurrences} ${occurrences === 1 ? 'chord' : 'chords'}`;
+
+        progressCol.appendChild(fillBar);
+        progressCol.appendChild(occurrencesLabel);
+
+        const tagCol = document.createElement('div');
+        tagCol.className = "w-12 flex justify-end";
+        if (isTonalCenter) {
+          tagCol.innerHTML = `<span class="px-1.5 py-0.5 rounded text-[8px] bg-amber-500/10 border border-amber-500/30 text-amber-400 font-extrabold uppercase tracking-widest animate-pulse">Tonic</span>`;
+        }
+
+        barRow.appendChild(labelCol);
+        barRow.appendChild(progressCol);
+        barRow.appendChild(tagCol);
+
+        chartContainer.appendChild(barRow);
+      });
+    }
+
+    function evaluateScalesAndThaats() {
+      const wList = document.getElementById('westernScalesList');
+      const eList = document.getElementById('easternThaatsList');
+      
+      wList.innerHTML = '';
+      eList.innerHTML = '';
+
+      if (state.chords.length === 0) {
+        wList.innerHTML = `<div class="text-xs text-slate-500">Awaiting chord elements.</div>`;
+        eList.innerHTML = `<div class="text-xs text-slate-500">Awaiting chord elements.</div>`;
+        return;
+      }
+
+      const uniquePitchIndices = new Set();
+      state.chords.forEach(ch => {
+        const transCh = buildTransposedChord(ch, state.semitones);
+        const useFlats = useFlatsForContext(transCh.root);
+        const notes = getChordNotes(transCh.root, transCh.suffix, useFlats, transCh.bass);
+        notes.forEach(note => {
+          const name = note.replace(/[0-9]/g, '');
+          uniquePitchIndices.add(getPitchIndex(name));
+        });
+      });
+
+      const uniquePitchesArray = Array.from(uniquePitchIndices);
+
+      // Western
+      const westernMatches = [];
+      PITCHES.forEach((tonic, tonicIdx) => {
+        WESTERN_SCALES.forEach(scale => {
+          const scalePitches = scale.intervals.map(interval => (tonicIdx + interval) % 12);
+          let matchedCount = 0;
+          uniquePitchesArray.forEach(pitch => {
+            if (scalePitches.includes(pitch)) matchedCount++;
+          });
+
+          const percentage = uniquePitchesArray.length > 0 ? (matchedCount / uniquePitchesArray.length) * 100 : 0;
+          if (percentage > 50) {
+            westernMatches.push({
+              tonic: state.accidentalMode === 'flat' ? FLAT_PITCHES[tonicIdx] : PITCHES[tonicIdx],
+              scaleName: scale.name,
+              percentage: Math.round(percentage),
+              unmatchedNotes: uniquePitchesArray.filter(p => !scalePitches.includes(p))
+            });
+          }
+        });
+      });
+
+      westernMatches.sort((a, b) => b.percentage - a.percentage);
+
+      if (westernMatches.length === 0) {
+        wList.innerHTML = `<div class="text-xs text-slate-500">No high compatibility matches found.</div>`;
+      } else {
+        westernMatches.slice(0, 5).forEach(match => {
+          const isPerfect = match.percentage === 100;
+          const card = document.createElement('div');
+          card.className = `p-2 rounded-xl border transition-all flex items-center justify-between text-xs ${isPerfect ? 'bg-indigo-950/20 border-indigo-500/30' : 'bg-slate-950 border-slate-850'}`;
+          const progressColor = isPerfect ? 'bg-indigo-500' : 'bg-slate-600';
+          
+          card.innerHTML = `
+            <div class="space-y-0.5 flex-1 min-w-0 pr-2">
+              <div class="font-bold text-slate-200 truncate">${match.tonic} ${match.scaleName}</div>
+              ${!isPerfect ? `<div class="text-[10px] text-slate-500 truncate">Missing: ${match.unmatchedNotes.map(p => state.accidentalMode === 'flat' ? FLAT_PITCHES[p] : PITCHES[p]).join(', ')}</div>` : `<div class="text-[10px] text-indigo-400 font-semibold">100% Structural Fit</div>`}
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <span class="font-mono text-[10px] font-bold text-slate-400">${match.percentage}%</span>
+              <div class="w-10 bg-slate-800 h-1 rounded-full overflow-hidden">
+                <div class="${progressColor} h-full" style="width: ${match.percentage}%"></div>
+              </div>
+            </div>
+          `;
+          wList.appendChild(card);
+        });
+      }
+
+      // Hindustani
+      const thaatMatches = [];
+      PITCHES.forEach((tonic, tonicIdx) => {
+        HINDUSTANI_THAATS.forEach(thaat => {
+          const thaatPitches = thaat.intervals.map(interval => (tonicIdx + interval) % 12);
+          let matchedCount = 0;
+          uniquePitchesArray.forEach(pitch => {
+            if (thaatPitches.includes(pitch)) matchedCount++;
+          });
+
+          const percentage = uniquePitchesArray.length > 0 ? (matchedCount / uniquePitchesArray.length) * 100 : 0;
+          if (percentage > 50) {
+            const swarRepresentation = thaat.swars.split(' ').map((swar, i) => {
+              const absInterval = thaat.intervals[i];
+              const absPitch = (tonicIdx + absInterval) % 12;
+              const noteName = state.accidentalMode === 'flat' ? FLAT_PITCHES[absPitch] : PITCHES[absPitch];
+              return `<span class="hover:text-pink-300 transition-colors" title="${noteName}">${swar}</span>`;
+            }).join(' ');
+
+            thaatMatches.push({
+              tonic: state.accidentalMode === 'flat' ? FLAT_PITCHES[tonicIdx] : PITCHES[tonicIdx],
+              thaatName: thaat.name,
+              percentage: Math.round(percentage),
+              swars: swarRepresentation
+            });
+          }
+        });
+      });
+
+      thaatMatches.sort((a, b) => b.percentage - a.percentage);
+
+      if (thaatMatches.length === 0) {
+        eList.innerHTML = `<div class="text-xs text-slate-500">No matching thaats.</div>`;
+      } else {
+        thaatMatches.slice(0, 5).forEach(match => {
+          const isPerfect = match.percentage === 100;
+          const card = document.createElement('div');
+          card.className = `p-2 rounded-xl border transition-all space-y-1 text-xs ${isPerfect ? 'bg-pink-950/20 border-pink-500/30' : 'bg-slate-950 border-slate-850'}`;
+          
+          card.innerHTML = `
+            <div class="flex items-center justify-between gap-2">
+              <div class="font-bold text-slate-200 truncate">${match.tonic} ${match.thaatName}</div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                <span class="font-mono text-[10px] text-slate-400 font-semibold">${match.percentage}%</span>
+                <span class="w-1.5 h-1.5 rounded-full ${isPerfect ? 'bg-pink-500' : 'bg-slate-600'}"></span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-[10px] border-t border-slate-900/60 pt-1 text-slate-400 font-mono">
+              <span>Swars:</span>
+              <span class="font-bold tracking-wider text-pink-400">${match.swars}</span>
+            </div>
+          `;
+          eList.appendChild(card);
+        });
+      }
+    }
+
+    // Build the visual sequencer map
+    function drawSequencerProgression() {
+      const parent = document.getElementById('progressionCards');
+      parent.innerHTML = '';
+
+      if (state.chords.length === 0) {
+        for (let i = 0; i < 4; i++) {
+          const placeholder = document.createElement('div');
+          placeholder.className = "h-12 border border-dashed border-slate-800 rounded-xl flex items-center justify-center text-xs text-slate-600 font-mono";
+          placeholder.textContent = `--`;
+          parent.appendChild(placeholder);
+        }
+        return;
+      }
+
+      state.chords.forEach((ch, idx) => {
+        const transCh = buildTransposedChord(ch, state.semitones);
+        const card = document.createElement('button');
+        card.id = `seq-step-${idx}`;
+        card.onclick = () => {
+          const transFlats = useFlatsForContext(transCh.root);
+          const transNotes = getChordNotes(transCh.root, transCh.suffix, transFlats, transCh.bass);
+          playChordNotes(transNotes);
+        };
+
+        const isActive = (idx === state.currentLoopStep);
+        card.className = `h-12 rounded-lg border text-center flex flex-col items-center justify-center transition-all cursor-pointer select-none overflow-hidden ${isActive ? 'bg-indigo-600 border-indigo-400 shadow-md shadow-indigo-600/20' : 'bg-slate-950 border-slate-850 hover:bg-slate-900'}`;
+        card.innerHTML = `
+          <div class="font-mono font-extrabold text-xs truncate max-w-full px-1 ${isActive ? 'text-white' : 'text-indigo-300'}">${transCh.chordName}</div>
+          <div class="text-[8px] font-mono ${isActive ? 'text-indigo-200' : 'text-slate-500'}">Step ${idx+1}</div>
+        `;
+
+        parent.appendChild(card);
+      });
+    }
+
+    // Playhead Loop Runner logic
+    function toggleSequencer() {
+      if (state.chords.length === 0) {
+        dispatchToast("Please input a valid progression first before looping!");
+        return;
+      }
+
+      if (state.loopPlaying) {
+        stopSequencer();
+      } else {
+        startSequencer();
+      }
+    }
+
+    function startSequencer() {
+      state.loopPlaying = true;
+      document.getElementById('playbackIndicator').classList.remove('hidden');
+      
+      const playBtn = document.getElementById('playBtn');
+      const playIcon = document.getElementById('playIcon');
+      const playText = document.getElementById('playText');
+
+      playBtn.className = "flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 active:scale-95 text-slate-950 font-bold rounded-lg text-xs transition-all shadow-lg shadow-amber-500/20";
+      playIcon.innerHTML = `<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />`;
+      playText.textContent = "Pause Loop";
+
+      state.currentLoopStep = -1;
+      runTick();
+    }
+
+    function runTick() {
+      if (!state.loopPlaying) return;
+
+      state.currentLoopStep = (state.currentLoopStep + 1) % state.chords.length;
+      drawSequencerProgression();
+
+      const activeCh = state.chords[state.currentLoopStep];
+      const transCh = buildTransposedChord(activeCh, state.semitones);
+      const useFlats = useFlatsForContext(transCh.root);
+      const notes = getChordNotes(transCh.root, transCh.suffix, useFlats, transCh.bass);
+      playChordNotes(notes);
+
+      const delayMs = (60 / state.bpm) * 1000 * 2; 
+      state.loopIntervalId = setTimeout(runTick, delayMs);
+    }
+
+    function restartSequencer() {
+      clearTimeout(state.loopIntervalId);
+      runTick();
+    }
+
+    function stopSequencer() {
+      state.loopPlaying = false;
+      clearTimeout(state.loopIntervalId);
+      state.currentLoopStep = -1;
+      
+      const playBtn = document.getElementById('playBtn');
+      const playIcon = document.getElementById('playIcon');
+      const playText = document.getElementById('playText');
+      document.getElementById('playbackIndicator').classList.add('hidden');
+
+      playBtn.className = "flex-1 flex items-center justify-center gap-1.5 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 active:scale-95 text-slate-950 font-bold rounded-lg text-xs transition-all shadow-md";
+      playIcon.innerHTML = `<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />`;
+      playText.textContent = "Play Loop";
+
+      drawSequencerProgression();
+      stopAllOscillators();
+    }
+  </script>
+
+  <!-- Keyboard Visualization Engine -->
+  <script>
+    function buildPianoKeyboard() {
+      const parent = document.getElementById('pianoKeyboard');
+      parent.innerHTML = '';
+
+      const basePitches = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+      const notesInSpan = [];
+
+      for (let octave = 3; octave <= 5; octave++) {
+        basePitches.forEach(pitch => {
+          notesInSpan.push({ pitch, octave, fullName: `${pitch}${octave}` });
+        });
+      }
+
+      notesInSpan.forEach(note => {
+        const isBlack = note.pitch.includes('#');
+        const key = document.createElement('div');
+        key.id = `piano-key-${note.fullName.replace('#', 's')}`;
+        key.title = note.fullName;
+
+        if (isBlack) {
+          key.className = "absolute bg-slate-900 border-x border-b border-slate-950 h-16 w-5 z-10 rounded-b-md cursor-pointer transition-colors";
+          const indexInOctave = basePitches.indexOf(note.pitch);
+          const previousWhitesCount = basePitches.slice(0, indexInOctave).filter(p => !p.includes('#')).length;
+          const octaveOffset = (note.octave - 3) * 7;
+          const leftPositionPercent = ((previousWhitesCount + octaveOffset) / 21) * 100;
+          
+          key.style.left = `calc(${leftPositionPercent}% - 10px)`;
+        } else {
+          key.className = "flex-1 bg-slate-800 border-r border-slate-950 h-full rounded-b-lg cursor-pointer transition-colors relative flex items-end justify-center pb-2";
+          key.innerHTML = `<span class="text-[8px] font-mono text-slate-500 font-bold select-none">${note.pitch}${note.octave}</span>`;
+        }
+
+        key.onclick = () => {
+          playChordNotes([note.fullName]);
+        };
+
+        parent.appendChild(key);
+      });
+    }
+
+    function drawKeyboardFootprint() {
+      document.querySelectorAll('#pianoKeyboard div').forEach(key => {
+        const isBlack = key.id.includes('s') || key.classList.contains('absolute');
+        if (isBlack) {
+          key.style.backgroundColor = '';
+        } else {
+          key.style.backgroundColor = '';
+        }
+      });
+
+      if (state.chords.length === 0) return;
+
+      const footprintNotes = new Set();
+      state.chords.forEach(ch => {
+        const transCh = buildTransposedChord(ch, state.semitones);
+        const useFlats = useFlatsForContext(transCh.root);
+        const notes = getChordNotes(transCh.root, transCh.suffix, useFlats, transCh.bass);
+        notes.forEach(n => footprintNotes.add(n));
+      });
+
+      footprintNotes.forEach(noteName => {
+        const flatNoteName = noteToSharpEquiv(noteName);
+        const elementId = `piano-key-${flatNoteName.replace('#', 's')}`;
+        const keyEl = document.getElementById(elementId);
+        
+        if (keyEl) {
+          const isBlack = keyEl.id.includes('s') || keyEl.classList.contains('absolute');
+          if (isBlack) {
+            keyEl.style.backgroundColor = '#312e81'; // Deep Indigo-900 highlight
+          } else {
+            keyEl.style.backgroundColor = '#1e1b4b'; // Subtle Indigo backplate
+          }
+        }
+      });
+    }
+
+    function highlightPianoKeyTemporarily(noteName) {
+      const sharpNote = noteToSharpEquiv(noteName);
+      const elementId = `piano-key-${sharpNote.replace('#', 's')}`;
+      const keyEl = document.getElementById(elementId);
+
+      if (keyEl) {
+        const originalBg = keyEl.style.backgroundColor;
+        keyEl.style.backgroundColor = '#d97706'; // Vibrant amber flash when plucking note
+        
+        setTimeout(() => {
+          keyEl.style.backgroundColor = originalBg;
+        }, 350);
+      }
+    }
+
+    function noteToSharpEquiv(noteStr) {
+      const flatToSharp = {
+        'Db': 'C#',
+        'Eb': 'D#',
+        'Gb': 'F#',
+        'Ab': 'G#',
+        'Bb': 'A#'
+      };
+
+      let pitch = noteStr.replace(/[0-9]/g, '');
+      const octave = noteStr.replace(/[^0-9]/g, '');
+
+      if (flatToSharp[pitch]) {
+        return `${flatToSharp[pitch]}${octave}`;
+      }
+      return noteStr;
+    }
+  </script>
+
+</body>
+</html>
